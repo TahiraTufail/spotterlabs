@@ -70,9 +70,10 @@ def plan_route(start: str, finish: str) -> dict:
     plan = optimize_fuel_stops(
         along,
         route.distance_miles,
-        range_miles=settings.VEHICLE_RANGE_MILES,
+        range_miles=settings.VEHICLE_RANGE_MILES - settings.RANGE_SAFETY_MARGIN_MILES,
         mpg=settings.VEHICLE_MPG,
         origin_window_miles=settings.ORIGIN_FILL_WINDOW_MILES,
+        stop_penalty=settings.FUEL_STOP_PENALTY,
     )
     optimize_ms = _ms(t)
 
@@ -94,6 +95,7 @@ def plan_route(start: str, finish: str) -> dict:
                 "lat": s.station.lat,
                 "lng": s.station.lng,
                 "mile": round(s.mile, 1),
+                "off_route_miles": round(s.station.offset_miles, 1),
                 "price_per_gallon": round(s.price, 3),
                 "gallons": round(s.gallons, 2),
                 "cost": round(s.cost, 2),

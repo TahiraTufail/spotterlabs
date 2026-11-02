@@ -2,6 +2,8 @@ from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from stations.index import warm
+
 from .errors import PlanError
 from .service import plan_route
 
@@ -17,6 +19,7 @@ def error_response(code, message, status):
 
 class HealthView(APIView):
     def get(self, request):
+        warm()
         return Response({"status": "ok"})
 
 
@@ -27,6 +30,8 @@ class RoutePlanView(APIView):
             problems = "; ".join(f"{field}: {' '.join(map(str, errs))}" for field, errs in serializer.errors.items())
             return error_response("invalid_request", problems, 400)
         try:
-            return Response(plan_route(**serializer.validated_data))
+            data = plan_route(**serializer.validated_data)
+            data["map_url"] = request.build_absolute_uri(data["map_url"])
+            return Response(data)
         except PlanError as exc:
             return error_response(exc.code, exc.message, exc.status)

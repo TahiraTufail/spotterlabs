@@ -44,6 +44,13 @@ def _load_index():
         return {(name, state): (float(lat), float(lng)) for name, state, lat, lng in reader}
 
 
+@lru_cache(maxsize=1)
+def _load_squashed():
+    """Same index keyed without spaces, so "Mc Lean" matches "McLean" and "De Forest" matches "DeForest"."""
+    return {(name.replace(" ", ""), state): coords for (name, state), coords in _load_index().items()}
+
+
 def lookup_city(city: str, state: str):
     """Return (lat, lng) for a city or None. The index keeps the most populous match per name."""
-    return _load_index().get((normalize_place(city), state.strip().upper()))
+    name, state = normalize_place(city), state.strip().upper()
+    return _load_index().get((name, state)) or _load_squashed().get((name.replace(" ", ""), state))

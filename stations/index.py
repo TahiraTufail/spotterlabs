@@ -39,6 +39,11 @@ def _load():
     return _cache["rows"], _cache["xyz"]
 
 
+def warm():
+    """Load the station index now so the first route request does not pay for it."""
+    _load()
+
+
 def stations_along(route_coords, corridor_miles, total_miles=None):
     """Stations within corridor_miles of the route, each with its mile marker, sorted by mile.
 
@@ -51,6 +56,10 @@ def stations_along(route_coords, corridor_miles, total_miles=None):
     points, cumulative = densify(route_coords, DENSIFY_STEP_MILES)
     if total_miles and cumulative[-1] > 0:
         cumulative = cumulative * (total_miles / cumulative[-1])
+    # Provider geometry is far denser than a 15 mile corridor needs: keep one point per mile.
+    first_in_mile = np.unique(np.floor(cumulative / DENSIFY_STEP_MILES), return_index=True)[1]
+    keep = np.unique(np.append(first_in_mile, len(points) - 1))
+    points, cumulative = points[keep], cumulative[keep]
     tree = cKDTree(to_unit_xyz(points[:, 0], points[:, 1]))
     dist, idx = tree.query(station_xyz, k=1, distance_upper_bound=float(miles_to_chord(corridor_miles)))
     found = np.flatnonzero(np.isfinite(dist))

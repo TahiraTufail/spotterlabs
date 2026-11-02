@@ -21,7 +21,13 @@ page draws the route and the stops on a map.
 4. **Fuel plan.** Greedy purchase planning: if a cheaper station is within range, buy just enough to
    reach it; otherwise, if the destination is in range, buy just enough to finish; otherwise fill up
    and drive to the cheapest station in range. If a 500 mile stretch has no station, the API
-   answers 422 with the mile range.
+   answers 422 with the mile range. Because that plan treats every stop as free, it then drops any
+   stop whose removal raises the fuel bill by less than `FUEL_STOP_PENALTY` (default $5), so the
+   plan avoids top-ups of a gallon or two to save cents. Stations are compared by an effective
+   price that adds the fuel a round trip off the route would burn, so a slightly cheaper station
+   far from the road does not beat one on it. The plan also keeps a 25 mile reserve
+   (`RANGE_SAFETY_MARGIN_MILES`), so no leg is planned beyond 475 miles. Reported money and gallons
+   always use the real price and the fuel actually bought.
 5. **Caching.** The full result is cached in Redis by normalized start and finish, so a repeat
    request makes no external call. If Redis is unreachable the API still works, uncached.
 
@@ -33,7 +39,12 @@ page draws the route and the stops on a map.
   reaching it is priced at that station. If there is none, the first station on the route is used and
   `origin_fill_estimated` is `true`. The last purchase covers only what is needed to arrive.
 - **Station locations are approximate** (city level), which is why the corridor is 15 miles wide.
-  Detours to reach a station are not costed.
+  Each stop reports `off_route_miles`, its distance from the route line. Detour fuel is used to
+  rank stations but is not added to the reported total.
+- **Duplicate station IDs** in the CSV sometimes carry different prices (different rack IDs). The
+  lowest price is used.
+- **Coverage:** 6,614 of 6,626 unique US stations are placed. The other 12 (for example
+  Willow Beach, AZ and East Lyme, CT) have city names that GeoNames spells differently.
 - **Prices** are the CSV `Retail Price` in dollars per gallon.
 - Coordinate input is only checked against a rough USA bounding box. City names and geocoded text
   are restricted to the USA.
@@ -86,10 +97,10 @@ Response (abridged):
   "origin_fill_estimated": false,
   "fuel_stops": [
     {"order": 1, "name": "...", "city": "...", "state": "..", "lat": 0, "lng": 0,
-     "mile": 204.1, "price_per_gallon": 2.879, "gallons": 50.0, "cost": 143.95}
+     "mile": 204.1, "off_route_miles": 1.4, "price_per_gallon": 2.879, "gallons": 50.0, "cost": 143.95}
   ],
   "route": {"type": "LineString", "coordinates": [[-96.8, 32.78]]},
-  "map_url": "/?start=Dallas%2C+TX&finish=Chicago%2C+IL",
+  "map_url": "http://127.0.0.1:8000/?start=Dallas%2C+TX&finish=Chicago%2C+IL",
   "cached": false,
   "timing_ms": {"routing": 0, "stations": 0, "optimize": 0, "total": 0}
 }
@@ -109,15 +120,28 @@ Errors use `{"error": {"code": "...", "message": "..."}}`:
 
 ## Speed
 
-The routing call dominates. Measured with a live key, one request each:
+The routing call still dominates. Measured with a live key on a warm server (first request of each
+route, two runs):
 
-| Trip | Miles | Routing API | Stations + planning | Repeat (cached) |
-|---|---|---|---|---|
-| Denver to Boise | 831 | 2.2 s | 0.15 s first request, about 15 ms after | 2 ms |
-| New York to Los Angeles | 2,794 | 1.8 s | 40 ms | 1 ms |
-| Seattle to Miami | 3,328 | 3.3 s | 0.13 s | 1 ms |
+| Trip | Miles | Routing API (incl. decode) | Stations + planning | Total | Repeat (cached) |
+|---|---|---|---|---|---|
+| Denver to Boise | 831 | 0.19 to 0.20 s | about 20 to 30 ms | 0.26 to 0.34 s | 5 to 10 ms |
+| Dallas to Chicago | 967 | 0.19 to 0.24 s | about 30 to 40 ms | 0.27 to 0.34 s | 5 to 10 ms |
+| Seattle to Miami | 3,328 | 0.44 to 0.45 s | about 60 to 130 ms | 0.56 to 0.65 s | 5 to 10 ms |
+| New York to Los Angeles | 2,794 | 0.52 to 0.67 s | about 110 to 130 ms | 0.68 to 0.80 s | 5 to 10 ms |
 
-Times vary with the routing provider's load. `timing_ms` in each response splits the time by stage.
+What made it fast:
+
+- The directions request uses ORS's default JSON endpoint, whose geometry is an encoded polyline,
+  decoded locally with NumPy. In a side-by-side test it was about 4x faster than `/geojson`
+  (about 0.24 s against 0.9 to 1.2 s for New York to Los Angeles) and the response is 6x smaller.
+- The route is thinned to one point per mile before the station search.
+- Stations are held in memory and the index is warmed when the page or health check loads.
+- A repeat request is served from Redis without any external call.
+
+The routing provider's latency varies from run to run (a single call took between 0.2 s and 2.6 s in
+my tests), and the first request after a server start also pays for opening the HTTPS connection.
+`timing_ms` in each response splits the time by stage.
 
 ## Tests
 

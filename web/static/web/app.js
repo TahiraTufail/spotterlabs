@@ -52,7 +52,7 @@
       tr.tabIndex = 0;
       var station = cell(s.name);
       var where = document.createElement("small");
-      where.textContent = s.city + ", " + s.state;
+      where.textContent = s.city + ", " + s.state + (s.off_route_miles >= 1 ? ", about " + s.off_route_miles.toFixed(0) + " mi off route" : "");
       station.appendChild(where);
       tr.append(cell(s.order), station, cell(s.mile.toFixed(0), "num"), cell("$" + s.price_per_gallon.toFixed(3), "num"),
         cell(s.gallons.toFixed(1), "num"), cell(money(s.cost), "num"));
@@ -68,7 +68,14 @@
 
     var notes = [];
     if (data.origin_fill_estimated) notes.push("The first fill is priced at the first station on the route; none was within 50 miles of the start.");
-    notes.push("Computed in " + data.timing_ms.total + " ms" + (data.cached ? " (cached)." : "."));
+    if (data.fuel_stops.length && data.fuel_stops[0].mile >= 1) {
+      notes.push("The first fill also covers the " + data.fuel_stops[0].mile.toFixed(0) + " miles before that station.");
+    }
+    if (data.cached) {
+      notes.push("Served from cache in " + data.timing_ms.total + " ms.");
+    } else {
+      notes.push("Computed in " + data.timing_ms.total + " ms, of which " + data.timing_ms.routing + " ms was the routing API.");
+    }
     document.getElementById("r-note").textContent = notes.join(" ");
 
     resultsEl.hidden = false;

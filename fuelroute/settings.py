@@ -85,6 +85,8 @@ ORS_TIMEOUT_SECONDS = 10
 # Vehicle and planning constants
 VEHICLE_RANGE_MILES = 500
 VEHICLE_MPG = 10
+RANGE_SAFETY_MARGIN_MILES = 25  # plans leave this much reserve, since station positions are approximate
 CORRIDOR_MILES = 15
 ORIGIN_FILL_WINDOW_MILES = 50
+FUEL_STOP_PENALTY = 5.0  # dollars: an extra stop must save at least this much
 ROUTE_CACHE_SECONDS = 60 * 60 * 24

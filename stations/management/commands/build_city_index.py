@@ -19,12 +19,14 @@ class Command(BaseCommand):
         if not source.exists():
             raise CommandError(f"{source} not found")
 
-        best = {}  # (normalized name, state) -> (population, lat, lng)
+        best = {}  # (normalized name, state) -> ((is_primary, population), lat, lng)
 
-        def offer(name, state, population, lat, lng):
+        def offer(name, state, population, lat, lng, primary):
+            # A place's own name always beats another place's alternate name, whatever the population.
             key = (normalize_place(name), state)
-            if key[0] and (key not in best or population > best[key][0]):
-                best[key] = (population, lat, lng)
+            rank = (primary, population)
+            if key[0] and (key not in best or rank > best[key][0]):
+                best[key] = (rank, lat, lng)
 
         with open(source, encoding="utf-8") as fh:
             for line in fh:
@@ -32,11 +34,11 @@ class Command(BaseCommand):
                 if len(f) < 15 or f[6] != "P" or f[10] not in US_STATES:
                     continue
                 population, lat, lng, state = int(f[14] or 0), float(f[4]), float(f[5]), f[10]
-                offer(f[2], state, population, lat, lng)
+                offer(f[2], state, population, lat, lng, primary=True)
                 if population >= MIN_POPULATION_FOR_ALTERNATES:
                     for alt in f[3].split(","):
                         if alt.isascii() and 0 < len(alt) <= 40:
-                            offer(alt, state, population, lat, lng)
+                            offer(alt, state, population, lat, lng, primary=False)
 
         CITY_INDEX_PATH.parent.mkdir(parents=True, exist_ok=True)
         with open(CITY_INDEX_PATH, "w", newline="", encoding="utf-8") as fh:
