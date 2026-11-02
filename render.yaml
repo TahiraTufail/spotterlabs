@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: fuel-route-api
+    runtime: python
+    plan: free
+    # One worker with several threads: the station and city indexes use about 200 MB, and the
+    # free instance has 512 MB.
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: python manage.py migrate --noinput && python manage.py load_stations && gunicorn fuelroute.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 60
+    healthCheckPath: /api/v1/health/
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13"
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: ORS_API_KEY
+        sync: false
+      - key: REDIS_URL
+        sync: false

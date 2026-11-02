@@ -54,7 +54,7 @@ page draws the route and the stops on a map.
 ```bash
 python -m venv .venv
 .venv\Scripts\activate          # macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 copy .env.example .env          # then set ORS_API_KEY (free key: openrouteservice.org)
 python manage.py migrate
 python manage.py load_stations
@@ -142,6 +142,25 @@ What made it fast:
 The routing provider's latency varies from run to run (a single call took between 0.2 s and 2.6 s in
 my tests), and the first request after a server start also pays for opening the HTTPS connection.
 `timing_ms` in each response splits the time by stage.
+
+## Deploy (Render + Redis Cloud, both free)
+
+1. **Redis Cloud:** create a free database (30 MB) at redis.io/cloud. Copy its public endpoint
+   and default-user password into a URL of the form
+   `redis://default:PASSWORD@HOST:PORT`. If you turn TLS on for the database, use `rediss://`.
+2. **Render:** push this repository to GitHub, then in the Render dashboard choose
+   New, Blueprint, and pick the repository. Render reads [render.yaml](render.yaml).
+3. When prompted, set `ORS_API_KEY` (your OpenRouteService key) and `REDIS_URL` (from step 1).
+   `DJANGO_SECRET_KEY` is generated for you.
+4. After the first deploy, open `https://<your-service>.onrender.com/` and
+   `https://<your-service>.onrender.com/api/v1/health/`.
+
+The build installs dependencies and collects static files. Each start runs the migrations, loads
+the station data into SQLite, and starts gunicorn (one worker, four threads, which keeps memory
+under the free instance's 512 MB). Keys live only in Render's environment settings, never in the repository.
+
+Free instances sleep after about 15 minutes without traffic, so the first request after a pause
+takes roughly a minute while the app starts. Open the page once before a demo to wake it.
 
 ## Tests
 
