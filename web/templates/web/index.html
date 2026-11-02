@@ -1,0 +1,48 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fuel Route Planner</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+  <link rel="stylesheet" href="{% static 'web/app.css' %}">
+</head>
+<body>
+  <div class="layout">
+    <aside class="panel">
+      <h1>Fuel Route Planner</h1>
+      <p class="muted">Cheapest fuel stops for a trip within the USA. 500 mile range, 10 MPG.</p>
+
+      <form id="plan-form" novalidate>
+        <label for="start">Start</label>
+        <input id="start" name="start" type="text" value="{{ start }}" placeholder="City, ST" autocomplete="off" required>
+        <label for="finish">Finish</label>
+        <input id="finish" name="finish" type="text" value="{{ finish }}" placeholder="City, ST" autocomplete="off" required>
+        <button id="submit" type="submit">Plan route</button>
+      </form>
+
+      <p id="error" class="error" role="alert" hidden></p>
+
+      <section id="results" aria-live="polite" hidden>
+        <dl class="summary">
+          <div><dt>Distance</dt><dd id="r-distance"></dd></div>
+          <div><dt>Fuel</dt><dd id="r-gallons"></dd></div>
+          <div><dt>Total cost</dt><dd id="r-cost"></dd></div>
+        </dl>
+        <table>
+          <caption>Fuel stops</caption>
+          <thead>
+            <tr><th>#</th><th>Station</th><th class="num">Mile</th><th class="num">Price</th><th class="num">Gallons</th><th class="num">Cost</th></tr>
+          </thead>
+          <tbody id="stops"></tbody>
+        </table>
+        <p id="r-note" class="muted small"></p>
+      </section>
+    </aside>
+    <div id="map" role="img" aria-label="Map of the route. The same stops are listed in the table."></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <script src="{% static 'web/app.js' %}"></script>
+</body>
+</html>

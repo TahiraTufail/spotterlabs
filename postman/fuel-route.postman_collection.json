@@ -1,0 +1,60 @@
+{
+  "info": {
+    "name": "Fuel Route API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{"key": "base_url", "value": "http://127.0.0.1:8000"}],
+  "item": [
+    {
+      "name": "Short trip (Dallas to Austin)",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('status is 200', () => pm.response.to.have.status(200));",
+        "pm.test('total_cost is a number', () => pm.expect(pm.response.json().total_cost).to.be.a('number'));"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\"start\": \"Dallas, TX\", \"finish\": \"Austin, TX\"}"},
+        "url": "{{base_url}}/api/v1/route-plan/"
+      }
+    },
+    {
+      "name": "Long trip (New York to Los Angeles)",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('status is 200', () => pm.response.to.have.status(200));",
+        "pm.test('has several fuel stops', () => pm.expect(pm.response.json().fuel_stops.length).to.be.above(3));"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\"start\": \"New York, NY\", \"finish\": \"Los Angeles, CA\"}"},
+        "url": "{{base_url}}/api/v1/route-plan/"
+      }
+    },
+    {
+      "name": "Repeat request (served from cache)",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('cached on repeat', () => pm.expect(pm.response.json().cached).to.eql(true));"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\"start\": \"New York, NY\", \"finish\": \"Los Angeles, CA\"}"},
+        "url": "{{base_url}}/api/v1/route-plan/"
+      }
+    },
+    {
+      "name": "Error: place that does not exist",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('status is 400', () => pm.response.to.have.status(400));",
+        "pm.test('error code', () => pm.expect(pm.response.json().error.code).to.eql('invalid_location'));"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\"start\": \"zzzzqqqq\", \"finish\": \"Chicago, IL\"}"},
+        "url": "{{base_url}}/api/v1/route-plan/"
+      }
+    }
+  ]
+}

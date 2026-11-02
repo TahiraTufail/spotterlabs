@@ -1,0 +1,80 @@
+:root {
+  --text: #1b1b1b;
+  --muted: #6a6a6a;
+  --line: #d8d8d8;
+  --bg: #ffffff;
+  --accent: #1d4e89;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+h1 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
+.muted { color: var(--muted); margin: 0 0 24px; }
+.small { font-size: 13px; margin: 16px 0 0; }
+
+.layout { display: flex; flex-direction: column; min-height: 100vh; }
+.panel { padding: 24px 16px; border-bottom: 1px solid var(--line); }
+#map { height: 360px; }
+
+@media (min-width: 900px) {
+  .layout { flex-direction: row; height: 100vh; }
+  .panel { width: 400px; flex: none; overflow-y: auto; border-bottom: 0; border-right: 1px solid var(--line); padding: 32px 24px; }
+  #map { flex: 1; height: auto; }
+}
+
+label { display: block; margin: 16px 0 4px; font-size: 13px; color: var(--muted); }
+
+input {
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+input:focus-visible, button:focus-visible, tr[tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+button {
+  margin-top: 24px;
+  padding: 8px 16px;
+  font: inherit;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.6; cursor: default; }
+
+.error { margin: 16px 0 0; padding: 4px 0 4px 12px; border-left: 3px solid var(--accent); }
+
+.summary { margin: 32px 0 24px; border-top: 1px solid var(--line); }
+.summary div { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.summary dt { color: var(--muted); }
+.summary dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+caption { text-align: left; font-size: 13px; color: var(--muted); padding-bottom: 8px; }
+th, td { padding: 6px 4px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: #f4f4f4; }
+td small { display: block; color: var(--muted); }
+
+.stop-marker {
+  width: 24px; height: 24px; line-height: 22px;
+  text-align: center; font-size: 12px; font-weight: 600;
+  color: #fff; background: var(--accent);
+  border: 2px solid #fff; border-radius: 50%;
+}
